@@ -1,0 +1,148 @@
+version: "3.7"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+
+    networks:
+      - ChatmeNet
+
+    environment:
+      - TZ=America/Sao_Paulo
+      - POSTGRES_DB=chatme
+      - POSTGRES_USER=chatme
+      - POSTGRES_PASSWORD=troque_esta_senha
+
+    volumes:
+      - chatme_pgdata:/var/lib/postgresql/data
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+        - io.portainer.accesscontrol.users=admin
+
+  chatme:
+    image: dncarbonell/chatme:alpha
+
+    networks:
+      - ChatmeNet
+      - proxy
+
+    volumes:
+      - chatme_media:/var/lib/chatme/storage
+
+    environment:
+      # --- Configurações Gerais ---
+      - TZ=America/Sao_Paulo
+      - PORT=8081
+      - PUBLIC_BASE_URL=https://app.exemplo.com.br            # URL pública final da instância - sempre com "https://". O host desta URL é o domínio da licença
+      #- LOG_LEVEL=info                                        # debug, info, warn, error (padrão: info)
+
+      # --- Banco de Dados (PostgreSQL/pgvector) ---
+      - DATABASE_URL=postgres://chatme:troque_esta_senha@postgres:5432/chatme?sslmode=disable
+
+      # --- Segurança ---
+      - SECURE_COOKIES=true                                    # true em produção (atrás de TLS); false só para testar login por cookie em http
+      #- SAFE_FETCH_ALLOW_PRIVATE_NETWORK=false                # webhooks de bots bloqueiam rede privada por padrão (proteção SSRF); ative só p/ endpoints internos confiáveis
+
+      # --- Chave mestra da instalação (OBRIGATÓRIA) ---
+      # Raiz da qual o app deriva, por HKDF, uma chave para cada finalidade (credenciais
+      # de IA, segredos de bots, etc). Vem só do ambiente, precisa ser a MESMA em todas
+      # as réplicas e nunca deve trocar depois do primeiro boot. Gere com: openssl rand -hex 32
+      - CHATME_MASTER_KEY=troque_esta_chave_mestra
+
+      # --- Licença (entregue pela Flouds) ---
+      # Deixe vazio para rodar em modo "unlicensed" (funcional, com aviso, 1 tenant/1 pessoa)
+      - CHATME_LICENSE_KEY=
+      #- LICENSE_SERVER_URL=https://flouds.com.br              # default já correto na maioria dos casos
+
+      # --- Branding-base da instalação (fallback do primeiro boot) ---
+      # Pode deixar em branco e configurar depois pelo próprio Chatme
+      #- PRODUCT_NAME=
+      #- LOGO_URL=
+      #- COLOR_PRIMARY=
+      #- SUPPORT_EMAIL=
+
+      # --- fzap global (conector WhatsApp - infra interna, o cliente final não vê) ---
+      - FZAP_BASE_URL=https://fzap.exemplo.com.br
+      - FZAP_ADMIN_TOKEN=troque_este_token
+
+      # --- Armazenamento de mídia (anexos das mensagens) ---
+      # Config GLOBAL por instalação (não por tenant). Os bytes de mídia não ficam no
+      # banco: vão para um volume (fs) ou um bucket S3-compatível (s3).
+      - STORAGE_BACKEND=fs                                     # fs (volume, default) | s3 (MinIO, R2, Spaces, AWS S3)
+
+      # -- Backend fs (volume) --
+      - STORAGE_ROOT=/var/lib/chatme/storage
+      # Segredo HMAC que assina as URLs temporárias de mídia de SAÍDA (a fzap baixa por
+      # essa URL). Obrigatório no backend fs. Gere com: openssl rand -hex 32
+      - STORAGE_SIGN_SECRET=troque_este_segredo
+
+      # -- Backend s3 (S3-compatível) --
+      #- STORAGE_ENDPOINT=                                     # host:porta; vazio = AWS S3
+      #- STORAGE_REGION=us-east-1
+      #- STORAGE_BUCKET=chatme-media
+      #- STORAGE_ACCESS_KEY_ID=
+      #- STORAGE_SECRET_ACCESS_KEY=
+      #- STORAGE_FORCE_PATH_STYLE=true                         # true para MinIO e afins
+      #- STORAGE_USE_SSL=true
+
+      # -- Comuns de storage --
+      #- STORAGE_SIGNED_URL_TTL=15m                             # validade das URLs assinadas de saída
+      #- STORAGE_MAX_UPLOAD_BYTES=26214400                      # teto de upload de mídia de saída (bytes) - default 25 MiB
+
+      # --- Transcrição de áudio (opcional, feita pelo próprio Chatme) ---
+      # Disponibiliza o provedor para a instalação; cada tenant ainda ativa em Configurações > Recursos
+      #- TRANSCRIPTION_ENABLED=false
+      #- TRANSCRIPTION_PROVIDER=openai                          # openai | groq
+      #- TRANSCRIPTION_API_KEY=
+      #- TRANSCRIPTION_MODEL=                                   # default: whisper-1 (openai) | whisper-large-v3 (groq)
+      #- TRANSCRIPTION_BASE_URL=                                # endpoint opcional; default oficial de cada provider
+      #- TRANSCRIPTION_LANGUAGE=pt                               # ISO-639-1; vazio = detecção automática
+      #- TRANSCRIPTION_HTTP_TIMEOUT=90s
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+      labels:
+        - io.portainer.accesscontrol.users=admin
+        # Configuração Traefik
+        - traefik.enable=true
+        - traefik.swarm.network=proxy
+        - traefik.http.routers.chatme.rule=Host(`app.exemplo.com.br`)
+        - traefik.http.routers.chatme.entrypoints=websecure
+        - traefik.http.routers.chatme.tls=true
+        - traefik.http.routers.chatme.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.chatme.service=chatme
+        - traefik.http.services.chatme.loadbalancer.server.port=8081
+        - traefik.http.services.chatme.loadbalancer.passHostHeader=true
+
+volumes:
+  chatme_pgdata:
+    name: chatme_pgdata
+    external: true
+  chatme_media:
+    name: chatme_media
+    external: true
+
+networks:
+  ChatmeNet:
+    name: ChatmeNet
+  proxy:
+    name: proxy
+    external: true
