@@ -104,6 +104,12 @@ A stack completa (Swarm/Traefik/PostgreSQL/volumes/rede) esta neste arquivo:
 
 - [stack.yml](https://github.com/flouds-dncarbonell/projeto-chatme/blob/main/stack.yml)
 
+### Coolify
+
+Compose pronto para importar como recurso **Docker Compose Empty** no Coolify:
+
+- [deploy/coolify](https://github.com/flouds-dncarbonell/projeto-chatme/tree/main/deploy/coolify)
+
 ---
 
 ## Interfaces
