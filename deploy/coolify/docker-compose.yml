@@ -1,0 +1,68 @@
+# documentation: https://github.com/flouds-dncarbonell/projeto-chatme
+# slogan: Inbox multi-tenant de WhatsApp da Flouds, self-hosted e whitelabel
+# category: communication
+# tags: whatsapp,inbox,helpdesk
+# port: 8081
+
+services:
+  chatme:
+    image: dncarbonell/chatme:alpha
+    pull_policy: always
+    environment:
+      # --- Configurações gerais ---
+      - SERVICE_URL_CHATME_8081
+      - PUBLIC_BASE_URL=${SERVICE_URL_CHATME}
+      - TZ=${TZ:-America/Sao_Paulo}
+      - PORT=8081
+      #- LOG_LEVEL=info
+
+      # --- Banco de dados (PostgreSQL/pgvector) ---
+      - DATABASE_URL=postgres://chatme:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/chatme?sslmode=disable
+
+      # --- Segurança ---
+      - SECURE_COOKIES=true
+
+      # --- Chave mestra da instalação (OBRIGATÓRIA, não muda depois do 1º boot) ---
+      - CHATME_MASTER_KEY=${SERVICE_PASSWORD_64_CHATMEMASTERKEY}
+
+      # --- Licença (entregue pela Flouds) ---
+      # Deixe vazio para rodar em modo "unlicensed" (funcional, com aviso, 1 tenant/1 pessoa)
+      - CHATME_LICENSE_KEY=${CHATME_LICENSE_KEY:-}
+
+      # --- fzap (conector WhatsApp — instância própria, obrigatória) ---
+      - FZAP_BASE_URL=${FZAP_BASE_URL:?informe a URL da sua instância fzap}
+      - FZAP_ADMIN_TOKEN=${FZAP_ADMIN_TOKEN:?informe o ADMIN_TOKEN dessa instância fzap}
+
+      # --- Armazenamento de mídia (volume local por padrão) ---
+      - STORAGE_BACKEND=fs
+      - STORAGE_ROOT=/var/lib/chatme/storage
+      - STORAGE_SIGN_SECRET=${SERVICE_PASSWORD_64_STORAGESIGN}
+    volumes:
+      - chatme_media:/var/lib/chatme/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_DB=chatme
+      - POSTGRES_USER=chatme
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - TZ=${TZ:-America/Sao_Paulo}
+    volumes:
+      - chatme_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  chatme_pgdata:
+  chatme_media:
