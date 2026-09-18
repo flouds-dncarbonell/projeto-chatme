@@ -30,7 +30,7 @@ services:
         - io.portainer.accesscontrol.users=admin
 
   chatme:
-    image: dncarbonell/chatme:alpha
+    image: dncarbonell/chatme:latest
 
     networks:
       - ChatmeNet
