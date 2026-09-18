@@ -41,6 +41,9 @@ os recursos de uma operacao de atendimento:
 
 - **Inbox completa**: conversas, midia (audio, video, documento, imagem), grupos,
   participantes, ficha de contato e organizacoes (empresas agrupando contatos).
+- **Canais**: WhatsApp via **fzap**, e Messenger/Instagram via Pagina do Facebook.
+  Messenger e Instagram exigem um **app aprovado pela Meta**, configurado por
+  instalacao (App ID/Secret) no proprio console do Chatme.
 - **Distribuicao de conversas**: disponibilidade do agente, expediente por canal,
   estrategias de atribuicao configuraveis pelo admin.
 - **Motor de regras**: macros e acoes automaticas sobre conversas, catalogo de
