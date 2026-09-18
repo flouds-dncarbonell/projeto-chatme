@@ -22,6 +22,12 @@ mesmo banco.
 Conecta o WhatsApp via **fzap** (nao fala com o WhatsApp diretamente) e adiciona
 os recursos de uma operacao de atendimento:
 
+> **Pre-requisito:** o Chatme **precisa de uma instancia da fzap** rodando (self-host
+> propria ou contratada) para conectar canais de WhatsApp — ela e o conector, o
+> Chatme nao substitui nem embute esse papel. Veja
+> [projeto-fzap](https://github.com/flouds-dncarbonell/projeto-fzap) (deploy) e
+> [flouds.com.br/produtos/fzap](https://flouds.com.br/produtos/fzap) (produto).
+
 - Multi-tenant com isolamento por linha (RLS) no Postgres
 - Distribuicao de conversas para a equipe (fila, disponibilidade, escalonamento)
 - Motor de regras e macros para automacao de atendimento
@@ -65,7 +71,9 @@ docker pull dncarbonell/chatme:alpha
 ### Execucao rapida (minima)
 
 Precisa de um Postgres com a extensao `pgvector` (as migrations criam a extensao
-e o schema sozinhas no boot):
+e o schema sozinhas no boot) **e de uma instancia da fzap** ja no ar — e ela que
+o Chatme usa para conectar canais de WhatsApp (`FZAP_BASE_URL`/`FZAP_ADMIN_TOKEN`
+abaixo). Deploy da fzap: [projeto-fzap](https://github.com/flouds-dncarbonell/projeto-fzap).
 
 ```bash
 docker run -d --name chatme-db \
@@ -130,4 +138,4 @@ do seu ambiente.
 
 - Site do produto: [flouds.com.br/produtos/chatme](https://flouds.com.br/produtos/chatme)
 - Docker Hub: [dncarbonell/chatme](https://hub.docker.com/r/dncarbonell/chatme)
-- fzap (conector WhatsApp usado pelo Chatme): [projeto-fzap](https://github.com/flouds-dncarbonell/projeto-fzap)
+- fzap (conector WhatsApp obrigatorio do Chatme): [projeto-fzap](https://github.com/flouds-dncarbonell/projeto-fzap) · [flouds.com.br/produtos/fzap](https://flouds.com.br/produtos/fzap)
