@@ -51,6 +51,7 @@ services:
 
       # --- Segurança ---
       - SECURE_COOKIES=true                                    # true em produção (atrás de TLS); false só para testar login por cookie em http
+      - TRUST_PROXY_HEADERS=true                               # o Traefik termina o HTTPS e sobrescreve X-Forwarded-For; o serviço não tem porta publicada
       #- SAFE_FETCH_ALLOW_PRIVATE_NETWORK=false                # webhooks de bots bloqueiam rede privada por padrão (proteção SSRF); ative só p/ endpoints internos confiáveis
 
       # --- Chave mestra da instalação (OBRIGATÓRIA) ---
@@ -62,6 +63,20 @@ services:
       # --- Licença (entregue pela Flouds) ---
       # Deixe vazio para rodar em modo "unlicensed" (funcional, com aviso, 1 tenant/1 pessoa)
       - CHATME_LICENSE_KEY=
+
+      # --- Domínios próprios das contas (opcional, Chatme 0.7.0+) ---
+      # Cada conta pode atender no domínio do cliente (ex.: atendimento.cliente.com.br),
+      # cadastrado no console sem editar esta stack. Exige preparar o Traefik uma vez:
+      # deploy/dominios-proprios/README.md. Descomente os 3 juntos; parcial impede o boot.
+      # A licença continua no domínio de PUBLIC_BASE_URL.
+      #- CUSTOM_DOMAINS_IPS=203.0.113.10                       # IP(s) público(s) da VPS, separados por vírgula
+      #- CUSTOM_DOMAINS_PROXY_TOKEN=troque_este_segredo        # openssl rand -hex 32 (o mesmo vai na stack do Traefik)
+      #- CUSTOM_DOMAINS_UPSTREAM_URL=http://chatme_chatme:8081 # <stack>_<serviço>; stack com outro nome muda aqui
+      # A porta interna 8082 (consultada pelo Traefik) NÃO deve ser publicada.
+      # Padrões, se o seu Traefik usa outros nomes:
+      #- CUSTOM_DOMAINS_HTTP_ENTRYPOINT=web
+      #- CUSTOM_DOMAINS_ENTRYPOINT=websecure
+      #- CUSTOM_DOMAINS_CERT_RESOLVER=letsencryptresolver
 
       # --- Branding-base da instalação (fallback do primeiro boot) ---
       # Pode deixar em branco e configurar depois pelo próprio Chatme

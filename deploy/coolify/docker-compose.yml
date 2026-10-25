@@ -6,7 +6,7 @@
 
 services:
   chatme:
-    image: dncarbonell/chatme:alpha
+    image: dncarbonell/chatme:latest
     pull_policy: always
     environment:
       # --- Configurações gerais ---

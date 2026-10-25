@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Chatme Version](https://img.shields.io/badge/Version-alpha-orange)
+![Chatme Version](https://img.shields.io/badge/Version-0.7.0-blue)
 [![Docker](https://img.shields.io/badge/Docker-Available-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/dncarbonell/chatme)
 
 **Inbox de atendimento multi-tenant sobre WhatsApp, com licenciamento e marca propria por cliente**
@@ -52,6 +52,8 @@ os recursos de uma operacao de atendimento:
 - **Composer rico**: mencoes, formatacao e atalhos cientes do canal (WhatsApp).
 - **Whitelabel por tenant**: nome do produto, logo, cor e e-mail com dominio
   proprio; a partir de duas cores o Chatme gera a rampa de cor completa.
+- **Dominio proprio por conta**: cada tenant atende no endereco do cliente,
+  com verificacao de DNS e HTTPS automaticos via Traefik.
 - **Armazenamento de midia**: volume local (`fs`) ou S3-compativel (MinIO,
   Cloudflare R2, DO Spaces, AWS S3), configuravel por instalacao.
 - **Transcricao de audio (opcional)**: OpenAI ou Groq, ativavel por tenant.
@@ -68,7 +70,7 @@ os recursos de uma operacao de atendimento:
 ### Imagem Docker
 
 ```bash
-docker pull dncarbonell/chatme:alpha
+docker pull dncarbonell/chatme:latest
 ```
 
 ### Execucao rapida (minima)
@@ -92,7 +94,7 @@ docker run -d -p 8081:8081 \
   -e STORAGE_SIGN_SECRET=$(openssl rand -hex 32) \
   -e SECURE_COOKIES=true \
   --link chatme-db \
-  dncarbonell/chatme:alpha
+  dncarbonell/chatme:latest
 ```
 
 Abra `PUBLIC_BASE_URL` no navegador: sem superadmin no banco, o Chatme mostra a
@@ -109,6 +111,14 @@ A stack completa (Swarm/Traefik/PostgreSQL/volumes/rede) esta neste arquivo:
 Compose pronto para importar como recurso **Docker Compose Empty** no Coolify:
 
 - [deploy/coolify](https://github.com/flouds-dncarbonell/projeto-chatme/tree/main/deploy/coolify)
+
+### Domínios próprios das contas
+
+A partir da 0.7.0, cada conta pode atender no domínio do próprio cliente
+(`atendimento.cliente.com.br`), cadastrado pelo console. O Traefik é preparado
+uma vez, com um provider HTTP que consulta o Chatme:
+
+- [deploy/dominios-proprios](https://github.com/flouds-dncarbonell/projeto-chatme/tree/main/deploy/dominios-proprios) — passo a passo e stack do Traefik de referência
 
 ---
 

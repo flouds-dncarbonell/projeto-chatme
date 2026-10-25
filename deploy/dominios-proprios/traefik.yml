@@ -1,0 +1,84 @@
+# Stack do Traefik preparada para os domínios próprios das contas do Chatme.
+#
+# É a mesma stack que o instalador da Flouds (installer-flouds) gera, com as três
+# linhas do provider HTTP acrescentadas ao final de `command`. Se o seu Traefik
+# já está no ar, NÃO substitua a stack inteira: copie só essas três linhas para
+# a definição existente e atualize. Providers, entradas, resolver e redes que já
+# existem precisam continuar lá.
+#
+# Antes de subir, troque:
+#   - SEU_SEGREDO: o mesmo valor de CUSTOM_DOMAINS_PROXY_TOKEN na stack do Chatme
+#     (gere com `openssl rand -hex 32`; hexadecimal dispensa escape na URL)
+#   - seu@email.com.br: e-mail usado no Let's Encrypt
+#   - chatme_chatme: <nome da stack>_<nome do serviço> do Chatme, se for diferente
+#
+# Guia completo: deploy/dominios-proprios/README.md
+version: "3.7"
+
+services:
+
+  traefik:
+    image: traefik:v3.6.17
+    command:
+      - --api.dashboard=true
+      - --providers.swarm.endpoint=unix:///var/run/docker.sock
+      - --providers.swarm.exposedbydefault=false
+      - --providers.swarm.network=proxy
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.transport.respondingTimeouts.idleTimeout=3600
+      - --certificatesresolvers.letsencryptresolver.acme.httpchallenge=true
+      - --certificatesresolvers.letsencryptresolver.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencryptresolver.acme.email=seu@email.com.br
+      - --certificatesresolvers.letsencryptresolver.acme.storage=/etc/traefik/letsencrypt/acme.json
+      - --log.level=DEBUG
+      - --log.format=common
+      - --accesslog=true
+      # --- Domínios próprios do Chatme ---
+      # O Traefik consulta as rotas das contas no listener interno do Chatme.
+      # O usuário é literalmente "domains"; a senha é o segredo da stack do Chatme.
+      # Aceita um único provider HTTP: se outro serviço já usa um, combine antes.
+      - --providers.http.endpoint=http://domains:SEU_SEGREDO@chatme_chatme:8082/traefik
+      - --providers.http.pollinterval=5s
+      - --providers.http.polltimeout=5s
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certificates:/etc/traefik/letsencrypt
+    networks:
+      - proxy   # a mesma rede do Chatme; é por ela que a porta 8082 é alcançada
+    ports:
+      - target: 80
+        published: 80
+        mode: host
+      - target: 443
+        published: 443
+        mode: host
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - traefik.enable=true
+        - traefik.http.middlewares.redirect-https.redirectscheme.scheme=https
+        - traefik.http.middlewares.redirect-https.redirectscheme.permanent=true
+        - traefik.http.routers.http-catchall.rule=Host(`{host:.+}`)
+        - traefik.http.routers.http-catchall.entrypoints=web
+        - traefik.http.routers.http-catchall.middlewares=redirect-https
+        - traefik.http.routers.http-catchall.priority=1
+        - traefik.http.services.traefik.loadbalancer.server.port=8080
+
+volumes:
+  traefik_certificates:
+    external: true
+    name: traefik_certificates
+
+networks:
+  proxy:
+    external: true
+    attachable: true
+    name: proxy

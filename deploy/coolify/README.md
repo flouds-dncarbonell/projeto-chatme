@@ -41,6 +41,14 @@ Sem usuário administrador ainda, o Chatme mostra a tela de configuração
 inicial: ela cria o primeiro superadmin e o primeiro tenant, sem precisar
 mexer no banco.
 
+## Domínios próprios das contas
+
+O Coolify gerencia o próprio proxy. Para que uma conta atenda no domínio do
+cliente, cadastre o domínio na conta pelo console do Chatme e adicione o mesmo
+domínio em **Domains** do serviço `chatme`, ao lado do principal. A ativação
+automática (sem tocar no painel) exige editar a configuração estática do
+Traefik; veja [deploy/dominios-proprios](../dominios-proprios/README.md).
+
 ## Persistência
 
 Não remova os volumes ao recriar ou atualizar os containers:
