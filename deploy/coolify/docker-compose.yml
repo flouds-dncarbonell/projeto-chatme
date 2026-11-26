@@ -17,6 +17,9 @@ services:
       #- LOG_LEVEL=info
 
       # --- Banco de dados (PostgreSQL/pgvector) ---
+      # "chatme" é o POSTGRES_USER, superusuário. O Chatme usa ele só no boot para
+      # criar a role chatme_app (sem superusuário, mesma senha), as extensões e as
+      # marcas LEAKPROOF, e trabalha como chatme_app, para o isolamento entre contas valer.
       - DATABASE_URL=postgres://chatme:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/chatme?sslmode=disable
 
       # --- Segurança ---
@@ -33,8 +36,7 @@ services:
       - FZAP_BASE_URL=${FZAP_BASE_URL:?informe a URL da sua instância fzap}
       - FZAP_ADMIN_TOKEN=${FZAP_ADMIN_TOKEN:?informe o ADMIN_TOKEN dessa instância fzap}
 
-      # --- Armazenamento de mídia (volume local por padrão) ---
-      - STORAGE_BACKEND=fs
+      # --- Armazenamento de mídia (volume local; S3 se configura no /console) ---
       - STORAGE_ROOT=/var/lib/chatme/storage
       - STORAGE_SIGN_SECRET=${SERVICE_PASSWORD_64_STORAGESIGN}
     volumes:

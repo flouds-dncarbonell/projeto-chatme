@@ -100,6 +100,13 @@ docker run -d -p 8081:8081 \
 Abra `PUBLIC_BASE_URL` no navegador: sem superadmin no banco, o Chatme mostra a
 **tela de setup** (cria o 1o superadmin + tenant e ja loga).
 
+O `POSTGRES_USER` da imagem e superusuario, e superusuario ignora o isolamento
+por linha (RLS). Por isso o Chatme usa essa conexao so no boot: cria a role
+`chatme_app` (sem superusuario, mesma senha), as extensoes e as marcas
+`LEAKPROOF` da busca, e trabalha como `chatme_app`. O log mostra
+`database prepared; connecting as the app role`. Instalacao que ja conectava
+como superusuario se corrige ao atualizar a imagem, sem mudar variavel.
+
 ### Stack completa
 
 A stack completa (Swarm/Traefik/PostgreSQL/volumes/rede) esta neste arquivo:

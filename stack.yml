@@ -47,6 +47,11 @@ services:
       #- LOG_LEVEL=info                                        # debug, info, warn, error (padrão: info)
 
       # --- Banco de Dados (PostgreSQL/pgvector) ---
+      # "chatme" é o POSTGRES_USER da imagem, superusuário. O Chatme usa ele só no
+      # boot: cria a role chatme_app (sem superusuário, mesma senha), as extensões e
+      # as marcas LEAKPROOF da busca, e trabalha como chatme_app. Assim o isolamento
+      # entre contas (RLS) vale. Para trocar a senha depois da instalação, rode
+      # ALTER ROLE chatme PASSWORD '...' no banco antes de mudar as duas variáveis.
       - DATABASE_URL=postgres://chatme:troque_esta_senha@postgres:5432/chatme?sslmode=disable
 
       # --- Segurança ---
@@ -90,33 +95,22 @@ services:
       - FZAP_ADMIN_TOKEN=troque_este_token
 
       # --- Armazenamento de mídia (anexos das mensagens) ---
-      # Config GLOBAL por instalação (não por tenant). Os bytes de mídia não ficam no
-      # banco: vão para um volume (fs) ou um bucket S3-compatível (s3).
-      - STORAGE_BACKEND=fs                                     # fs (volume, default) | s3 (MinIO, R2, Spaces, AWS S3)
-
-      # -- Backend fs (volume) --
+      # Começa no volume chatme_media. Bucket S3-compatível (MinIO, R2, Spaces, AWS S3)
+      # e a migração entre volume e bucket são configurados depois, pelo console do
+      # superadmin (/console, aba Armazenamento), não por variável de ambiente.
       - STORAGE_ROOT=/var/lib/chatme/storage
       # Segredo HMAC que assina as URLs temporárias de mídia de SAÍDA (a fzap baixa por
-      # essa URL). Obrigatório no backend fs. Gere com: openssl rand -hex 32
+      # essa URL). Obrigatório. Gere com: openssl rand -hex 32
       - STORAGE_SIGN_SECRET=troque_este_segredo
-
-      # -- Backend s3 (S3-compatível) --
-      #- STORAGE_ENDPOINT=                                     # host:porta; vazio = AWS S3
-      #- STORAGE_REGION=us-east-1
-      #- STORAGE_BUCKET=chatme-media
-      #- STORAGE_ACCESS_KEY_ID=
-      #- STORAGE_SECRET_ACCESS_KEY=
-      #- STORAGE_FORCE_PATH_STYLE=true                         # true para MinIO e afins
-      #- STORAGE_USE_SSL=true
-
-      # -- Comuns de storage --
       #- STORAGE_SIGNED_URL_TTL=15m                             # validade das URLs assinadas de saída
       #- STORAGE_MAX_UPLOAD_BYTES=26214400                      # teto de upload de mídia de saída (bytes) - default 25 MiB
 
       # --- Transcrição de áudio (opcional, feita pelo próprio Chatme) ---
-      # Disponibiliza o provedor para a instalação; cada tenant ainda ativa em Configurações > Recursos
+      # A configuração normal é pelo console do superadmin (/console, aba Transcrição):
+      # credenciais de OpenAI, Groq ou OpenRouter e liberação por conta. As variáveis
+      # abaixo são só o fallback de quem já usava assim.
       #- TRANSCRIPTION_ENABLED=false
-      #- TRANSCRIPTION_PROVIDER=openai                          # openai | groq
+      #- TRANSCRIPTION_PROVIDER=openai                          # openai | groq | openrouter
       #- TRANSCRIPTION_API_KEY=
       #- TRANSCRIPTION_MODEL=                                   # default: whisper-1 (openai) | whisper-large-v3 (groq)
       #- TRANSCRIPTION_BASE_URL=                                # endpoint opcional; default oficial de cada provider
